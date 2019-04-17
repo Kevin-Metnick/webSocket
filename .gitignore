@@ -1,0 +1,7 @@
+config
+vendor
+upload
+composer.lock
+jpush.log
+tmp/log/server.log
+.idea

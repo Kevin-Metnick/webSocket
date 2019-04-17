@@ -1,0 +1,14 @@
+{
+    "name":"kevin/workerman",
+    "require": {
+        "workerman/workerman": "^3.5",
+        "workerman/mysql": "^1.0",
+        "aliyuncs/oss-sdk-php": "^2.3",
+        "jpush/jpush": "^3.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": "./app/"
+        }
+    }
+}
