@@ -38,8 +38,7 @@ class User
             $where['set'] = $key."=:set";
             $where['value'] = $value;
         }
-//        ($is_login==1)?'':
-        $time = date("Y-m-d H:i");
+        $time = date("Y-m-d H:i:s");
         $res = model::init()->update(self::$table)->cols(['is_login'=>$is_login, 'login_time'=>$time])->where($where['set'])->bindValue('set', $where['value'])->row();
         return $res;
     }

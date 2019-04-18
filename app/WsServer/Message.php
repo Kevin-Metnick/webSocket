@@ -30,6 +30,12 @@ class Message
     private $uidConnection;
 
     /**
+     * 用户id
+     * @var string
+     */
+    public $id;
+
+    /**
      * 用户会话列表
      * @var [$object]
      */
@@ -55,6 +61,8 @@ class Message
 
         $this->conUser = $conUser;
 
+        $this->id = $this->getUserId($this->Connection->id);
+
         return true;
     }
 
@@ -67,19 +75,42 @@ class Message
     {
         $token = $data['token'];
         $queryRes = user::getId(['token'=>$token]);
+
         if (empty($queryRes['id'])) return false;
         return $queryRes;
     }
 
-    public function alertFriend($id)
+    /**
+     * 用户上下线消息提示
+     * @param int $id 用户id
+     * @param bool $is_open 是否登录
+     * @return bool
+     */
+    public function alertFriend($id, $is_open=true)
     {
         $list = UserRelation::getList(['friend_id'=>$id]);
         foreach ($list as $key=>$value){
-            $this->notice(['type'=>11, 'receive'=>$value['user_id']], true);
+            $this->notice(['type'=>11, 'receive'=>$value['user_id']], $is_open);
         }
+        return true;
+    }
+
+    /**
+     * 用户动作-提示
+     * @param  $receive
+     * @return bool
+     */
+    public function alertOperation(int $receive)
+    {
+        $this->activities(['type'=>14, 'receive'=>$receive, 'status'=>1]);
+        return true;
     }
 
 
+    /**
+     * 启动项
+     * return string
+     */
    public function init()
    {
        return $this->dataType($this->data['type']);
@@ -114,17 +145,28 @@ class Message
            5 => 'url',
            6 => 'video',
            10 => 'operation',
+       ];
+       $araArray = [
            14 => 'activities',
+           11 => 'notice',
        ];
        $type = array_keys($typeArray);
+       $ara = array_keys($araArray);
        if (in_array($data,$type)){
-         return  $this->Common($typeArray[$data], $is_mysql);
+           return  $this->Common($typeArray[$data], $is_mysql);
+       } else if(in_array($data, $ara)) {
+           return  $this->Common($araArray[$data], false);
        }
 
        $this->Connection->send(errorJson('类型错误'));
        return true;
    }
 
+   /**
+    * 发送离线时期未读消息消息
+    * @param int $id 用户id
+    * @return bool
+    */
    public function history($id)
    {
         $hisList = MessageLog::getHisList($id);
@@ -136,10 +178,12 @@ class Message
                 'content'   =>$value['content'],
                 'readStatus'=>$value['readStatus'],
                 'receive'=>$value['receive'],
+                'send'=>$value['send'],
                 'send_time' => $value['send_time']
             ];
             $this->Connection->send(json_encode($data));
         }
+        return true;
    }
 
 }

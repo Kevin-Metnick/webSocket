@@ -93,11 +93,11 @@ class Operation
                 }
 
                 if ($verify) {
-                    User::setLogin(['id'=>$verify['id']],1);
+                    User::setLogin(['id'=>$verify['id']],true);
                     $this->conUser[$verify['id']] = $connection->id;
                     $connection->send(successJson("验证成功"));
-
                     $messsage = new Message($connection, $data, $this->uidConnection,$this->conUser);
+
                     $messsage->history($verify['id'],$connection);    //发送历史消息
                     $messsage->alertFriend($verify['id']);
                     return true;
@@ -110,7 +110,6 @@ class Operation
             $messsage = new Message($connection, $data, $this->uidConnection,$this->conUser);
             $messsage->init();
             echo "发送消息";
-//            $dataArr['send'] = $verify['id'];
 
         };
     }
@@ -126,12 +125,16 @@ class Operation
             $id = $connection->id;
             foreach ($this->conUser as $key=>$value) {
                 if ($value==$id){
+                    //下线提示
+                    $messsage = new Message($connection, '', $this->uidConnection,$this->conUser);
+                    $messsage->alertFriend($key,false);
+                    echo "用户".$id;
                     unset($this->conUser[$key]);
                     user::setLogin(['id'=>$key],0);
                 }
             }
             unset($this->uidConnection[$id]);
-            echo "关闭连接";
+            echo " 关闭连接\n";
         };
     }
 
@@ -144,6 +147,25 @@ class Operation
         $this->ws_servr->onWorkerStart = function ($worker){
             Timer::add(1, function()use($worker){
                 $time_now = time();
+                if (isset($GLOBALS['Timer'])){
+                    foreach ($GLOBALS['Timer'] as $key=>$value) {
+                        if ($time_now - $value > 10){
+                            $idArray = explode('-', $key);
+                            $sendId = $idArray['0'];
+                            $receive = $idArray['1'];
+                            $data = [
+                                'type'=>14,
+                                'receive'=> $receive,
+                                'status'=>1
+                            ];
+                            $connection = $this->uidConnection[$this->conUser[$sendId]];
+                            $message = new Message($connection,json_encode($data),$this->uidConnection,$this->conUser);
+//                            $message->alertOperation($receive)
+                            $message->init();
+                        }
+                    }
+                }
+
                 foreach($worker->connections as $connection) {
                     // 有可能该connection还没收到过消息，则lastMessageTime设置为当前时间
                     if (empty($connection->lastMessageTime)) {

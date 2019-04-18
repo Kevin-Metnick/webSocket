@@ -21,7 +21,7 @@ trait TypePrpccessing
             $this->Connection->send(errorJson('不存在此用户'));
             return false;
         }
-        $this->Connection->send(successJson('发送成功'));
+//        $this->Connection->send(successJson('发送成功'));
 
         //进行“数据库”记录
         $reply = $this->{$func}($data, $is_mysql);
@@ -135,12 +135,21 @@ trait TypePrpccessing
      * @param array $data
      * @return array;
      */
-    private function activities($data)
+    public function activities($data)
     {
         if (empty($data['status'])) {
             $data['status'] = 0;
         }
-        $data = $this->returnArr($data);
+
+        $data['send']=$this->id;
+        $data['time']=date('Y-m-d H:i');
+
+        $id = $data['send']."-".$data['receive'];
+        if ($data['status']==0){
+            $GLOBALS['Timer'][$id]= time();
+        } else {
+            unset($GLOBALS['Timer'][$id]);
+        }
 
         return $data;
     }
@@ -153,10 +162,11 @@ trait TypePrpccessing
      */
     private function notice($data, $is_open=false)
     {
+
         $receive = @$this->conUser[$data['receive']];
         if(!empty($receive)){
             $receiveConnection = $this->uidConnection[$receive];
-            $data['send']=$this->Connection->id;
+            $data['send']=$this->id;
             $data['is_open'] = $is_open?1:0;
             $data['time']=date('Y-m-d H:i');
             $receiveConnection->send(json_encode($data));
@@ -174,7 +184,7 @@ trait TypePrpccessing
     private function returnArr($data)
     {
         $array = [
-            'send' => $this->Connection->id,
+            'send' => $this->id,
             'time'=>date('Y-m-d H:i'),
         ];
 
@@ -223,5 +233,19 @@ trait TypePrpccessing
     private function imageBase64()
     {
         return true;
+    }
+
+    /**
+     *
+     */
+    private function getUserId($conId)
+    {
+        foreach ($this->conUser as $key=>$value)
+        {
+            if ($value==$conId){
+                return $key;
+            }
+        }
+        return fales;
     }
 }
